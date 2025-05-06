@@ -14,7 +14,7 @@ perceptron的概念，我同步到另一个文档。naive_perceptron的实现，
 
 ### Cost function
 
-$$ Mean\, Square \, Error = \frac{ \sum [y_{i} - ( wx_{i} + b )]^{2} }{N} $$
+$$ Mean\ Square \ Error = \frac{ \sum [y_{i} - ( wx_{i} + b )]^{2} }{N} $$
 
 ### Gradient descent
 
