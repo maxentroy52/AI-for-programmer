@@ -34,7 +34,13 @@ struct ContextFeatures {
 // You then join them in real-time to create the CrossFeatures for that specific pair. Their lifecycle is inherently different.
 //
 // Cross Features are explicit interactions while the dnn model learns the implicit interactions between user and items.
-struct CrossFeatures {
+struct alignas(64) CrossFeatures {
+  // False sharing occurs when multiple threads frequently write to different memory locations that happen to reside on the same cache line
+  // (typically 64 bytes on modern CPUs).
+  // Even though the threads are accessing different array elements, if those elements are close enough in memory,
+  // they might share the same cache line.
+  // Use alignas(64) to ensure each CrossFeatures occupies a full cache line
+
   // 1.User-Item crosses.
   float topic_affinity = 0.0f;
   float publisher_preference = 0.0f;

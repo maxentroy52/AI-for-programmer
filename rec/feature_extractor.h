@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thread>
 #include <vector>
 
 #include "feature.h"
@@ -20,6 +21,36 @@ class FeatureExtractor {
     cross_list.resize(item_size);
     for (int i = 0; i < item_size; ++i) {
       ComputeCrossFeatures(user, item_list[i], ctx, cross_list[i]);
+    }
+  }
+
+  void FeatureExtract(const UserFeatures& user, const std::vector<ItemFeatures>& item_list, const ContextFeatures& ctx, size_t batch_size,
+                      std::vector<CrossFeatures>& cross_list) {
+    if (item_list.empty()) {
+      return;
+    }
+    cross_list.resize(item_list.size());
+
+    // Calculate number of batches
+    size_t num_batches = (item_list.size() + batch_size - 1) / batch_size;
+    std::vector<std::thread> threads;
+    threads.reserve(num_batches);
+
+    // Feature extraction in parallel manner.
+    for (size_t batch = 0; batch < num_batches; ++batch) {
+      size_t start = batch * batch_size;
+      size_t end = std::min(start + batch_size, item_list.size());
+
+      threads.emplace_back([this, &user, &item_list, &ctx, &cross_list, start, end]() {
+        for (size_t i = start; i < end; ++i) {
+          ComputeCrossFeatures(user, item_list[i], ctx, cross_list[i]);
+        }
+      });
+    }
+
+    // Wait for all threads to complete
+    for (auto& thread : threads) {
+      thread.join();
     }
   }
 
