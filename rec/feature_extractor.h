@@ -1,0 +1,63 @@
+#pragma once
+
+#include <vector>
+
+#include "feature.h"
+
+// For online-feature computation.
+// In this scenario, it's for computing cross features real time.
+// But in our rs, it's also for computing user and item features. So, we need another data structure for storing the real-time computing features.
+// You may wonder, why user and item features still needs online computing?
+// 1. The direct reason is that it is the input param for fe lib, if you are trying to use fe lib, you must use the raw sample which means additional computing.
+// 2. From my perspective, the advantage of using raw sample is that it is a unified data structure and used in both online and offline.
+// In order to keep the consistency between online and offline, we should reduce the operation that will be performed in online and offline.
+// If we use the RawSample, there will be no more concatenation operation in offline.
+class FeatureExtractor {
+ public:
+  void FeatureExtract(const UserFeatures& user, const std::vector<ItemFeatures>& item_list, const ContextFeatures& ctx,
+                      std::vector<CrossFeatures>& cross_list) {
+    int item_size = item_list.size();
+    cross_list.resize(item_size);
+    for (int i = 0; i < item_size; ++i) {
+      ComputeCrossFeatures(user, item_list[i], ctx, cross_list[i]);
+    }
+  }
+
+ private:
+  void ComputeCrossFeatures(const UserFeatures& user, const ItemFeatures& item, const ContextFeatures& ctx,
+                            CrossFeatures& crossess) {
+    ComputeUserItemCrossFeatures(user, item, crossess);
+    ComputeContextItemCrossFeatures(item, ctx, crossess);
+  }
+
+  void ComputeUserItemCrossFeatures(const UserFeatures& user, const ItemFeatures& item,
+                                    CrossFeatures& crossess) {
+    OP_cal_topic_affinity(user, item, crossess);
+    OP_cal_publisher_preference(user, item, crossess);
+  }
+
+  void ComputeContextItemCrossFeatures(const ItemFeatures& item, const ContextFeatures& ctx,
+                                       CrossFeatures& crossess) {
+  }
+
+ private:
+  void OP_cal_topic_affinity(const UserFeatures& user, const ItemFeatures& item,
+                             CrossFeatures& crossess) {
+    auto it = user.stats.topic_click_rates.find(item.topic);
+    if (it != user.stats.topic_click_rates.end()) {
+      crossess.topic_affinity = it->second;
+      return;
+    }
+    crossess.topic_affinity = 0.0f;
+  }
+
+  void OP_cal_publisher_preference(const UserFeatures& user, const ItemFeatures& item,
+                                   CrossFeatures& crossess) {
+    auto it = user.stats.publisher_dwell_time.find(item.publisher);
+    if (it != user.stats.publisher_dwell_time.end()) {
+      crossess.publisher_preference = it->second;
+      return;
+    }
+    crossess.publisher_preference = 0.0f;
+  }
+};
