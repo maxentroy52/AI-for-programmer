@@ -3,6 +3,8 @@
 #include <string>
 #include <unordered_map>
 
+struct ItemFeatures;
+
 struct UserFeatures {
   int uid;
   int age;
@@ -13,6 +15,14 @@ struct UserFeatures {
     std::unordered_map<std::string, float> publisher_dwell_time;  // e.g., {"bbc": 45.2, "cnn": 32.1}
   };
   StatFeature stats;
+
+  struct UBT {
+    // According to the sim paper,
+    // Hard-search means select the behavior data belongs to the same category of the candidate item.
+    // It's actually a inverted index.
+    std::unordered_map<int, std::vector<ItemFeatures>> cat_behavior_;
+  };
+  UBT ubt;
 };
 
 struct ItemFeatures {
@@ -20,6 +30,10 @@ struct ItemFeatures {
   std::string topic;
   std::string publisher;
   time_t  publish_time;
+
+  int cat1;
+  int cat2;
+  std::vector<int> tags;
 };
 
 struct ContextFeatures {
@@ -54,4 +68,11 @@ struct alignas(64) CrossFeatures {
   // 5.Hashed Categorical Features ()
 
   // any other computed cross features.
+};
+
+struct alignas(64) BehaviorFeatures {
+  // We also call these features side info since long time sequence can not be retrieved in index service.
+  std::vector<int> cat1_list;
+  std::vector<int> cat2_list;
+  std::vector<std::vector<int>> tag_list;
 };

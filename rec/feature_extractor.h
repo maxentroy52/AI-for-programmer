@@ -16,20 +16,24 @@
 class FeatureExtractor {
  public:
   void FeatureExtract(const UserFeatures& user, const std::vector<ItemFeatures>& item_list, const ContextFeatures& ctx,
-                      std::vector<CrossFeatures>& cross_list) {
+                      std::vector<CrossFeatures>& cross_list, std::vector<BehaviorFeatures> behavior_list) {
     int item_size = item_list.size();
     cross_list.resize(item_size);
+    behavior_list.resize(item_size);
+
     for (int i = 0; i < item_size; ++i) {
       ComputeCrossFeatures(user, item_list[i], ctx, cross_list[i]);
+      ComputeBehaviorFeatures(user, item_list[i], behavior_list[i]);
     }
   }
 
   void FeatureExtract(const UserFeatures& user, const std::vector<ItemFeatures>& item_list, const ContextFeatures& ctx, size_t batch_size,
-                      std::vector<CrossFeatures>& cross_list) {
+                      std::vector<CrossFeatures>& cross_list, std::vector<BehaviorFeatures> behavior_list) {
     if (item_list.empty()) {
       return;
     }
     cross_list.resize(item_list.size());
+    behavior_list.resize(item_list.size());
 
     // Calculate number of batches
     size_t num_batches = (item_list.size() + batch_size - 1) / batch_size;
@@ -41,9 +45,10 @@ class FeatureExtractor {
       size_t start = batch * batch_size;
       size_t end = std::min(start + batch_size, item_list.size());
 
-      threads.emplace_back([this, &user, &item_list, &ctx, &cross_list, start, end]() {
+      threads.emplace_back([this, &user, &item_list, &ctx, &cross_list, &behavior_list, start, end]() {
         for (size_t i = start; i < end; ++i) {
           ComputeCrossFeatures(user, item_list[i], ctx, cross_list[i]);
+          ComputeBehaviorFeatures(user, item_list[i], behavior_list[i]);
         }
       });
     }
@@ -71,6 +76,14 @@ class FeatureExtractor {
                                        CrossFeatures& crossess) {
   }
 
+  void ComputeBehaviorFeatures(const UserFeatures& user, const ItemFeatures& item, BehaviorFeatures& behaviors) {
+    // Hard search.
+    // Hard-search means select the behavior data belongs to the same category of the candidate item.
+    OP_cal_cat1_in_ubt(user, item, behaviors);
+    OP_cal_cat2_in_ubt(user, item, behaviors);
+    OP_cal_tags_in_ubt(user, item, behaviors);
+  }
+
  private:
   void OP_cal_topic_affinity(const UserFeatures& user, const ItemFeatures& item,
                              CrossFeatures& crossess) {
@@ -91,4 +104,32 @@ class FeatureExtractor {
     }
     crossess.publisher_preference = 0.0f;
   }
+
+  void OP_cal_cat1_in_ubt(const UserFeatures& user, const ItemFeatures& item, BehaviorFeatures& behaviors) {
+    auto it = user.ubt.cat_behavior_.find(item.cat1);
+    if (it != user.ubt.cat_behavior_.end()) {
+      for (const auto& item_features : it->second) {
+        behaviors.cat1_list.emplace_back(item_features.cat1);
+      }
+    }
+  }
+
+  void OP_cal_cat2_in_ubt(const UserFeatures& user, const ItemFeatures& item, BehaviorFeatures& behaviors) {
+    auto it = user.ubt.cat_behavior_.find(item.cat1);
+    if (it != user.ubt.cat_behavior_.end()) {
+      for (const auto& item_features : it->second) {
+        behaviors.cat2_list.emplace_back(item_features.cat2);
+      }
+    }
+  }
+
+  void OP_cal_tags_in_ubt(const UserFeatures& user, const ItemFeatures& item, BehaviorFeatures& behaviors) {
+    auto it = user.ubt.cat_behavior_.find(item.cat1);
+    if (it != user.ubt.cat_behavior_.end()) {
+      for (const auto& item_features : it->second) {
+        behaviors.tag_list.emplace_back(item_features.tags);
+      }
+    }
+  }
+
 };
