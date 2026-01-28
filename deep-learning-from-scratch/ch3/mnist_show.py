@@ -9,7 +9,7 @@ def show_image(img):
     pil_img.show()
 
 
-(x_train, t_train), (x_test, t_test) = load_mnist(flatten = True, normalize = False)
+(x_train, t_train), (x_test, t_test) = load_mnist(flatten = True, normalize = True, one_hot_label = True)
 
 print(x_train.shape)
 print(t_train.shape)
