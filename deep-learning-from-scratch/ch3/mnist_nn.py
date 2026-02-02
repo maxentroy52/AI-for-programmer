@@ -1,6 +1,8 @@
 import sys,os
 import numpy as np
 import pickle
+
+from tensorboard.backend.event_processing.event_file_inspector import PRINT_SEPARATOR
 from tensorflow.python.ops.metrics_impl import accuracy
 
 sys.path.append(os.pardir)
@@ -44,5 +46,30 @@ def main():
 
     print(float(accuracy_cnt) / len(x_test))
 
+def print_layout():
+    _, _, x, y = get_data()
+    network = init_network()
+    W1, W2, W3 = network['W1'], network['W2'], network['W3']
+
+    print(W1.shape)
+    print(W2.shape)
+    print(W3.shape)
+
+def batch_predict():
+    _, _, x, t = get_data()
+    network = init_network()
+
+    batch_size = 100
+    accuracy_cnt = 0
+
+    for i in range(0, len(x), batch_size):
+        y_pred_batch = predict(network, x[i:i + batch_size])
+        p = np.argmax(y_pred_batch, axis=1)
+        accuracy_cnt += np.sum(p == t[i:i + batch_size])
+
+    print(float(accuracy_cnt) / len(x))
+
 if __name__ == '__main__':
-    main()
+    # main()
+    # print_layout()
+    batch_predict()
