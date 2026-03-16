@@ -1,5 +1,23 @@
 import numpy as np
 
+## 这里这么理解
+## loss算的是每一个样本的平均loss，所以最后需要除以batch_size
+## 前面的计算过程不变是因为python具备type flexibility，可以同时处理scalar and vector
+## 否则，前面的计算还得再套一个np.sum
+## eg: batch_size = 5, 5个样本，5个label [2, 7, 0, 9, 4](不是one-hot)
+## 每个label去对应的样本里面，把对应的预测概率取出来，就是结果
+## y[0, 2]
+## y[1, 7]
+## y[2, 0]
+## y[3, 9]
+## y[4, 4]
+## [y[0, 2], y[1, 7], y[2, 0], y[3, 9], y[4, 4]] 这是一个数组啊
+## np.log( [y[0, 2], y[1, 7], y[2, 0], y[3, 9], y[4, 4]] + 1e-7 )
+##
+## 所以，从这个输出中可以倒推出来，y和t的结构。
+## t不是one-hot encoding，它就是告诉你index.
+## y的输出，就是概率化分类的输出。它是一个向量，所以用t的index去取
+## 当然，t如果是one-hot encoding，也是ok的。这么的好处就是可以直接矩阵乘法
 def cross_entropy_error(y, t):
     if y.ndim == 1:
         t = t.reshape(1, t.size)
