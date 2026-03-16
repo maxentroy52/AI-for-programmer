@@ -18,6 +18,58 @@ import numpy as np
 ## t不是one-hot encoding，它就是告诉你index.
 ## y的输出，就是概率化分类的输出。它是一个向量，所以用t的index去取
 ## 当然，t如果是one-hot encoding，也是ok的。这么的好处就是可以直接矩阵乘法
+
+"""
+# Batch of 3 samples
+y = np.array([
+    [0.7, 0.2, 0.1],  # Sample 1
+    [0.1, 0.8, 0.1],  # Sample 2
+    [0.2, 0.3, 0.5]   # Sample 3
+])
+t = np.array([0, 1, 2])  # True labels for each sample
+
+loss = cross_entropy_error(y, t)
+print(f"Average Loss: {loss:.4f}")
+# Calculation:
+# Sample 1: -log(0.7) = 0.3567
+# Sample 2: -log(0.8) = 0.2231
+# Sample 3: -log(0.5) = 0.6931
+# Average: (0.3567 + 0.2231 + 0.6931) / 3 = 0.4243
+# Output: Average Loss: 0.4243
+"""
+
+"""
+Why Reshape is Needed
+The function needs to work in two scenarios:
+
+Single sample: When you pass one data point
+Batch of samples: When you pass multiple data points
+
+# Test with single sample
+y_single = np.array([0.7, 0.2, 0.1])
+t_single = np.array([0])
+
+# Output:
+# === Testing Single Sample ===
+# Original shapes - y: (3,), t: (1,)
+# Detected single sample, reshaping...
+# After reshape - y: (1, 3), t: (1, 1)   -->> [[0.7, 0.2, 0.1]] (1*3) 第一维只有一个sample, 第二维每个sample有3个元素 
+# Batch size: 1
+# Selected probabilities: [0.7]
+# Final loss: 0.3567
+"""
+
+"""
+y[np.arange(batch_size), t]
+## y[0, 2]
+## y[1, 7]
+## y[2, 0]
+## y[3, 9]
+## y[4, 4]
+
+这个展开是这样，语法非常简约，这里实现了遍历。
+"""
+
 def cross_entropy_error(y, t):
     if y.ndim == 1:
         t = t.reshape(1, t.size)
