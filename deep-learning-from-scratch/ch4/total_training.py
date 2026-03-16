@@ -42,4 +42,23 @@ class TwoLayerNet:
         accuracy = np.sum(y == t) / float(x.shape[0])
 
         return accuracy
-    
+
+    def numerical_gradient(self, x, t):
+        # net.loss总共有3个参数x, t, w.
+        # 对于每一个样本，(x,t)都是确定的。
+        # 此时，当前的w可以用x算出y，这是推理的过程。
+        # training就是，把x,t看做常数。w是变量，当前的w是一个position
+        # 然后算出当前的一个梯度grad(w)
+        #
+        # 具体计算的时候两种办法
+        # 1.可以数值微分的办法(给当前w一个h, 然后计算)
+        # 2.可以解析法(直接计算出导函数，带入当前w)
+        #
+        # 这个地方不好理解的是多元函数，到底谁是自变量，谁是因变量
+        #
+        # 这个损失函数你也好理解
+        # 它是可以带入一个，也可以带入所有
+        # 带入所有的(x, t)之后，形成关于w的函数
+        loss_w = lambda w: self.loss(x, t)
+
+        grads = []

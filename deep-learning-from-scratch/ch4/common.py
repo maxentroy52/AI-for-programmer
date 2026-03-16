@@ -89,6 +89,9 @@ def softmax(x):
     x_new_exp_sum = np.sum(x_new_exp)
     return x_new_exp / x_new_exp_sum
 
+# 这里如果带入，那么w其实就是x
+# (w,x,t)，x,t定了之后，loss是关于w的参数
+# w有当前的数值，相当于loss(w)的一个点而已 要继续更新
 def numerical_gradient(f, x):
     h = 1e-4
     grad = np.zeros_like(x)
