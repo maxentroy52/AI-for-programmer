@@ -40,8 +40,8 @@ def numerical_gradient(f, x):
 
 多元实现
 - 问题在于，每一个元素是一个vector,不是一个scalar.
-- 按照公司计算的时候，对于每一个元素的每一个分量，需要单独计算partial differences.
-- 此时，该元素的微分是一个vector，这个东西我们也叫做gradient.(collectively partial differences.)
+- 按照公式计算的时候，对于每一个元素的每一个分量，需要单独计算partial differences.
+- 此时，该元素的微分是一个vector，也是gradient.(collectively partial differences.)
 
 下面是numeric graident求解多元函数的办法
 
