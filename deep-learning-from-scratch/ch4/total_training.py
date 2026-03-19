@@ -61,4 +61,8 @@ class TwoLayerNet:
         # 带入所有的(x, t)之后，形成关于w的函数
         loss_w = lambda w: self.loss(x, t)
 
-        grads = []
+        grads = {}
+        grads['W1'] = numerical_gradient_nd(loss_w, self.params['W1'])
+        grads['W2'] = numerical_gradient_nd(loss_w, self.params['W2'])
+        grads['b1'] = numerical_gradient_nd(loss_w, self.params['b1'])
+        grads['b2'] = numerical_gradient_nd(loss_w, self.params['b2'])

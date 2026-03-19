@@ -136,9 +136,41 @@ def numerical_gradient_multi_array(f, x):
 
     return grad
 
+def numerical_gradient_nd(f, x):
+    h = 1e-4  # 0.0001
+    grad = np.zeros_like(x)
+
+    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+    while not it.finished:
+        idx = it.multi_index
+        tmp_val = x[idx]
+        x[idx] = tmp_val + h
+        fxh1 = f(x)  # f(x+h)
+
+        x[idx] = tmp_val - h
+        fxh2 = f(x)  # f(x-h)
+        grad[idx] = (fxh1 - fxh2) / (2 * h)
+
+        x[idx] = tmp_val  # 値を元に戻す
+        it.iternext()
+
+    return grad
+
+
 def gradient_descent(f, init_x, lr=0.01, step_num = 100):
     x = init_x
     for i in range(step_num):
         grad = numerical_gradient(f, x)
         x -= lr * grad
     return x
+
+# Function that computes sum of squares
+def sum_of_squares(x):
+    return np.sum(x ** 2)
+
+def test_numerical_gradient():
+    #print(numerical_gradient(sum_of_squares, np.array([[3.0, 4.0], [3.0, 2.0]])))
+    #print(numerical_gradient(sum_of_squares, np.array([0.0, 2.0])))
+    #print(numerical_gradient(sum_of_squares, np.array([3.0, 0.0])))
+
+test_numerical_gradient()
