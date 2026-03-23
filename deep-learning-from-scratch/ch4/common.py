@@ -169,8 +169,8 @@ def sum_of_squares(x):
     return np.sum(x ** 2)
 
 def test_numerical_gradient():
-    #print(numerical_gradient(sum_of_squares, np.array([[3.0, 4.0], [3.0, 2.0]])))
-    #print(numerical_gradient(sum_of_squares, np.array([0.0, 2.0])))
-    #print(numerical_gradient(sum_of_squares, np.array([3.0, 0.0])))
+    print(numerical_gradient(sum_of_squares, np.array([[3.0, 4.0], [3.0, 2.0]])))
+    print(numerical_gradient(sum_of_squares, np.array([0.0, 2.0])))
+    print(numerical_gradient(sum_of_squares, np.array([3.0, 0.0])))
 
-test_numerical_gradient()
+## test_numerical_gradient()

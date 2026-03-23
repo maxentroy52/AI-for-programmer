@@ -4,11 +4,6 @@ import numpy as np
 sys.path.append(os.pardir)
 from common import *
 
-# step1 - mini-batch
-# step2 - calculating gradients
-# step3 - update parameters(gradients descent)
-# step4 - repeating
-
 class TwoLayerNet:
     def __init__(self, input_size, hidden_size, output_size, weight_init_std = 0.01):
         self.params = {}
@@ -66,12 +61,3 @@ class TwoLayerNet:
         grads['W2'] = numerical_gradient_nd(loss_w, self.params['W2'])
         grads['b1'] = numerical_gradient_nd(loss_w, self.params['b1'])
         grads['b2'] = numerical_gradient_nd(loss_w, self.params['b2'])
-
-def test_two_layer_net():
-    net = TwoLayerNet(784, 100, 10)
-    print(net.params['W1'].shape)
-    print(net.params['b1'].shape)
-    print(net.params['W2'].shape)
-    print(net.params['b2'].shape)
-
-test_two_layer_net()
