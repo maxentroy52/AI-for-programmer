@@ -33,7 +33,7 @@ def test():
     print(t)  # [0 1 0]
 
     loss = net.loss(x, t)
-    print(loss)
+    print('this is loss: ', loss)
 
     # net.loss总共有3个参数x, t, w.
     # 对于每一个样本，(x,t)都是确定的。

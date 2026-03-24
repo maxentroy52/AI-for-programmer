@@ -68,6 +68,15 @@ print(numerical_gradient(sum_of_squares, np.array([3.0, 0.0]))) # calculate the 
 >To be more precise, the direction of a gradient is the direction that increases the value
 of the function most at each position.
 
+补充一点，```def numerical_gradient(f, x):```，这个函数的设计，需要理解。
+- 定义写成f(x)没有问题，其中x是自变量。求关于它的导数。
+- 微分法的办法是在当前position给一个h，然后求解。注意，此时position是确定的，已经给出了。
+- 所以，x的具体体现是一个已经给出值的数组。
+- 那么还需要给出x的意义在哪里呢？f(theta; x, t)，这表明f是关于theta的函数，所以调用的时候，需要给出f, theta_array
+  - 这样，在theta的position进行近似微分
+  - 如果给出t的postion，那么则是在t的postion进行微分。
+  - 所以，x的作用，是确定f到底是谁的函数。是谁的都行，所以需要参数给出确定。
+
 ### Vector
 
 - 这里需要特别注意的是，上面的函数，是个多元函数，处理的x是一个point or postion.
