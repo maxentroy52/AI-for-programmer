@@ -76,6 +76,11 @@ def cross_entropy_error(y, t):
         y = y.reshape(1, y.size)
     batch_size = y.shape[0]
     delta = 1e-7
+
+    # Check if t is one-hot encoded (2D array)
+    if t.ndim == 2:
+        t = np.argmax(t, axis=1)
+
     return -np.sum( np.log(y[np.arange(batch_size), t] + delta) ) / batch_size
 
 def sigmoid(x):

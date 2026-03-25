@@ -1,5 +1,7 @@
 import sys,os
 import numpy as np
+import matplotlib.pyplot as plt
+
 sys.path.append(os.pardir)
 from dataset.mnist import load_mnist
 from two_layer_net import TwoLayerNet
@@ -36,6 +38,8 @@ for i in range(iter_num):
     # 它这个逻辑是这样 loss = f(x, t, theta)
     # x, t作为常数带入后
     # loss变成 loss = f(theta; x,t)
+    print(x_batch.shape)
+    print(t_batch.shape)
     grad = network.numerical_gradient(x_batch, t_batch)
 
     # Update the parameter.
@@ -45,3 +49,10 @@ for i in range(iter_num):
     # Record learning process
     loss = network.loss(x_batch, t_batch)
     train_loss_list.append(loss)
+
+plt.plot(range(len(train_loss_list)), train_loss_list)
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+plt.title('Training Loss Curve')
+plt.grid(True)
+plt.show()

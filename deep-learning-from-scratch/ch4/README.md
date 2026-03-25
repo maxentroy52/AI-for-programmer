@@ -170,3 +170,115 @@ def gradient_descent(f, init_x, lr=0.01, step_num = 100):
         x -= lr * grad
     return x
 ```
+
+## Training.
+
+说一下training，这个还有点东西。
+
+```python
+# Hyper-parameters
+iter_num = 10000
+train_size = x_train.shape[0]
+batch_size = 100
+learning_rate = 0.1
+
+for i in range(iter_num):
+    # Obtain a mini-batch
+    # 这里 每次拿到的是100个下标 就是100个sample
+    batch_mask = np.random.choice(train_size, batch_size)
+    #print(batch_mask)
+
+    # 不得不说 非常简练抽象的表达
+    # 本次的训练样本我拿到 下面就开始训练
+    x_batch = x_train[batch_mask]
+    t_batch = t_train[batch_mask]
+
+    # 训练 - 美其名曰 本质就是计算loss function对于
+    # 当前参数的梯度
+    # Calculate a gradient
+    # 它这个逻辑是这样 loss = f(x, t, theta)
+    # x, t作为常数带入后
+    # loss变成 loss = f(theta; x,t)
+    grad = network.numerical_gradient(x_batch, t_batch)
+
+    # Update the parameter.
+    for key in ('W1', 'b1', 'W2', 'b2'):
+        network.params[key] -= learning_rate * grad[key]
+
+    # Record learning process
+    loss = network.loss(x_batch, t_batch)
+    train_loss_list.append(loss)
+```
+
+### Policy(少量batch多次迭代)
+
+说一下训练策略，可以发现，采用了如下办法
+- 没有total batch, 而是mini batch
+- 没有只训练一次，而是迭代了多次。每次迭代，更新一次参数。
+
+1. 更频繁的参数更新 → 更快收敛 
+- 参数更新次数：全批量只更新1次参数，小批量更新10,000次
+- 虽然总计算量更大，但每次更新后的参数都在改善，后续的batch是在"更好"的参数上计算
+
+2. 梯度噪声 → 更好的泛化能力
+- 这是随机性带来的好处
+- 每次选择随机样本，进行带噪声的梯度估计。
+- 噪声可以帮助跳出局部最小，找到更好的全局最优。
+
+3. 内存效率 → 不需要一次性加载所有数据
+
+- 类比理解
+想象你要调整100个旋钮让机器达到最优状态：
+- 全批量：测试所有60,000种情况，计算平均表现，然后调整一次旋钮。重复这个慢过程。
+- 小批量：随机选100种情况测试，立即微调旋钮。虽然测试总数更多，但每次微调后机器就在改进，整体更快找到最优。
+
+### Optimization
+
+目前实际的做法，也就是优化后的做法。
+
+```python
+# 损失函数对batch的梯度 = 各个样本梯度的平均
+# ∇L_batch = (1/100) * Σ ∇L(sample_i)
+
+# 关键：计算每个∇L(sample_i)时，使用的是相同的参数θ
+# 这些计算是独立的！
+
+import numpy as np
+import time
+
+# 模拟100个样本，每个784维
+samples = np.random.randn(100, 784)
+weights = np.random.randn(784, 100)
+
+# 方式1：循环（串行）
+start = time.time()
+for i in range(100):
+    result = np.dot(samples[i], weights)  # 100次单独计算
+print(f"循环耗时: {time.time() - start:.4f}秒")
+
+# 方式2：向量化（并行）
+start = time.time()
+result = np.dot(samples, weights)  # 1次矩阵运算！
+print(f"向量化耗时: {time.time() - start:.4f}秒")
+
+# 输出示例：
+# 循环耗时: 0.0234秒
+# 向量化耗时: 0.0003秒  # 快约78倍！
+```
+
+### Summary
+
+- 一个迭代，更新一次。
+- 每个迭代，在上个迭代基础上，参数计算并更新。
+
+```
+迭代1 (iter=1)         迭代2 (iter=2)        迭代3 (iter=3)
+    ↓                     ↓                     ↓
+[Batch 1]              [Batch 2]              [Batch 3]
+    ↓                     ↓                     ↓
+[并行处理100个样本]  [并行处理100个样本]  [并行处理100个样本]
+    ↓                     ↓                     ↓
+ 更新参数θ₁           更新参数θ₂           更新参数θ₃
+    ↓                     ↓                     ↓
+   必须串行！          必须串行！          必须串行！
+```

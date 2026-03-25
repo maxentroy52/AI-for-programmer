@@ -61,3 +61,5 @@ class TwoLayerNet:
         grads['W2'] = numerical_gradient_nd(loss_w, self.params['W2'])
         grads['b1'] = numerical_gradient_nd(loss_w, self.params['b1'])
         grads['b2'] = numerical_gradient_nd(loss_w, self.params['b2'])
+
+        return grads
