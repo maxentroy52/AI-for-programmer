@@ -266,6 +266,22 @@ print(f"向量化耗时: {time.time() - start:.4f}秒")
 # 向量化耗时: 0.0003秒  # 快约78倍！
 ```
 
+### Lambda的使用
+
+Your code flow:
+
+- numerical_gradient_nd(loss_W, self.model['W1']) is called
+- Inside numerical_gradient_nd, x points to self.model['W1']
+- x[idx] = tmp_val + h directly modifies self.model['W1'][idx]
+- fxh1 = f(x) calls loss_W, which calls self.loss(x, t)
+- self.loss uses self.model['W1'] (which now has the perturbed value)
+- After calculation, x[idx] = tmp_val restores the original value
+
+AI mistakenly thought the lambda was ignoring the w parameter, but I missed that:
+- The w parameter is not actually used in the lambda body
+- The real "perturbation" happens by directly modifying the array before calling f(x)
+- The lambda simply calls self.loss(x, t) which reads the current values from the model parameters
+
 ### Summary
 
 - 一个迭代，更新一次。
