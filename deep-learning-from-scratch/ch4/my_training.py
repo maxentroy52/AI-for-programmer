@@ -111,6 +111,10 @@ class ImageRecognizerNN():
 
             print(f"iteration:{iteration} end, loss is {loss}, elapsed time is {elapsed_time:.2f}s")
 
+    ## ---------------------------- Acc calculation -----------------------------------
+
+
+
 def test_image_recognizer():
     image_recognizer = ImageRecognizerNN(784, 100, 10)
     image_recognizer.debug()

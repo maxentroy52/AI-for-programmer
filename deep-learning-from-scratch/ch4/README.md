@@ -1,6 +1,3 @@
-## Loss function.
-
-
 ## Gradient method.
 
 梯度是这样，只有当我们讨论多元函数的时候，才会有梯度的概念。他是偏导数的集合。
@@ -298,3 +295,63 @@ AI mistakenly thought the lambda was ignoring the w parameter, but I missed that
     ↓                     ↓                     ↓
    必须串行！          必须串行！          必须串行！
 ```
+
+## Analysis
+
+分析一下训练的结果：
+- 从日志中可以看出来，非常慢。(loss在不断下降，训练是有效的)
+- 1min可以进行3次迭代，1h可以进行180次迭代，1day可以进行4320次迭代
+- 10000次迭代需要2天多。太慢了，下面分析一下慢在哪。
+```python
+iteration:0 begins.
+iteration:0 end, loss is 6.903138495471898, elapsed time is 19.42s
+iteration:1 begins.
+iteration:1 end, loss is 6.8894490408905495, elapsed time is 19.66s
+iteration:2 begins.
+iteration:2 end, loss is 6.893976967606961, elapsed time is 19.65s
+iteration:3 begins.
+iteration:3 end, loss is 6.889668194742657, elapsed time is 19.83s
+iteration:4 begins.
+iteration:4 end, loss is 6.8949818734213935, elapsed time is 19.92s
+iteration:5 begins.
+iteration:5 end, loss is 6.874609642977018, elapsed time is 20.24s
+iteration:6 begins.
+iteration:6 end, loss is 6.90435747443245, elapsed time is 20.35s
+iteration:7 begins.
+iteration:7 end, loss is 6.879768286747026, elapsed time is 20.78s
+...
+iteration:2392 end, loss is 5.140628341661429, elapsed time is 21.98s
+iteration:2393 begins.
+iteration:2393 end, loss is 5.124200654084805, elapsed time is 22.21s
+iteration:2394 begins.
+iteration:2394 end, loss is 5.2101359276571575, elapsed time is 22.48s
+```
+
+### For your network
+
+- Hidden layer: 784 × 100 = 78,400 weights + 100 biases = 78,500 parameters
+- Output layer: 100 × 10 = 1,000 weights + 10 biases = 1,010 parameters
+- Total parameters: ~79,510 parameters
+
+### Computation per iteration:
+- Each parameter requires 2 forward passes (f(x+h) and f(x-h))
+- Total forward passes per iteration: 79,510 × 2 = 159,020 forward passes
+- Each forward pass computes ~100 × (784×100 + 100×10) ≈ 7.94 million operations
+- Total operations per iteration: ~1.26 trillion floating-point operations!
+
+上面这个分析，我们拆解一下，核心思路是这样
+- 首先，先计算出来，需要多少次FP
+  - 每个参数，两次FP
+  - 总共79510个参数
+  - 总计需要79510 * 2 = 159020次FP
+- 然后，计算出FP的开销
+  - 这个就是矩阵乘法的开销
+  - 我们先考虑batch size为1的情形。
+  - 输入x是784维度的向量，然后做矩阵乘法(1*784) * (784 * 100)，总共784 * 100次计算
+    - 行向量乘以100个列向量
+    - 每个行向量是784维，所以784 * 1次计算
+    - 总共就是784 * 100
+  - output layer同理，188 * 10
+  - 总共就是784 * 100 + 100 * 10
+  - 100个样本，就是100*(784 * 100 + 100 * 10) = 7940000次计算
+- 总共 159020 * 7940000 = 1.26 trillion floating-point operations!
