@@ -93,7 +93,7 @@ def numerical_gradient_nd(f, x):
 
     return grad
 
-def plot_results(self, loss_list, train_acc_list, test_acc_list):
+def plot_results(loss_list, train_acc_list, test_acc_list):
     import matplotlib.pyplot as plt
 
     # Graph 1: Loss
