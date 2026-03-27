@@ -13,7 +13,7 @@ from dataset.mnist import load_mnist
 
 class ImageRecognizerNN():
     ## ---------------------------- Basic method for ImageRecognizer-----------------------------------
-    def __init__(self, input_size, hidden_size, output_size, weight_init_std = 0.01, learning_rate=0.1, iterations=1000, batch_size=100):
+    def __init__(self, input_size, hidden_size, output_size, weight_init_std = 0.01, learning_rate=0.1, iterations=10000, batch_size=100):
         # Model parameters.
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -118,7 +118,7 @@ class ImageRecognizerNN():
 
             # Calculate recognition accuracy for each epoch
             # It should be printed in every epoch.
-            if iteration % 10 == 0:
+            if iteration % iter_per_epoch == 0:
                 train_acc = self.accuracy(x_train, t_train)
                 test_acc = self.accuracy(x_test, t_test)
                 train_acc_list.append(train_acc)
