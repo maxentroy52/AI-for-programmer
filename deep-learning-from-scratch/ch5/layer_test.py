@@ -1,3 +1,5 @@
+import numpy as np
+
 # Stateless
 # data member
 class MulLayer:
@@ -87,4 +89,14 @@ def test_apple_and_orange_price():
     print(f"dapple: {dapple}, dapple_num: {dapple_num}")
     print(f"dorange: {dorange}, dorange_num: {dorange_num}")
 
-test_apple_and_orange_price()
+# test_apple_and_orange_price()
+
+def test_affilne_layer():
+    X = np.random.rand(2) # input values
+    W = np.random.rand(2, 3) # weights
+    B = np.random.rand(3) # bias
+
+    Y = np.dot(X, W) + B
+    print(f"X: {X}, W: {W}, B: {B}, Y: {Y}")
+
+test_affilne_layer()

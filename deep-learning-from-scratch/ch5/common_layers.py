@@ -1,5 +1,8 @@
 import numpy as np
+from werkzeug.serving import load_ssl_context
 
+from common_activation import softmax
+from common_activation import cross_entropy_error
 
 class Relu():
     """
@@ -113,4 +116,207 @@ class Sigmoid():
         # Compute gradient: derivative of sigmoid is sigmoid(x) * (1 - sigmoid(x))
         # Chain rule: multiply by incoming gradient
         dx = dout * self.out * (1 - self.out)
+        return dx
+
+
+class Affine:
+    """
+    Affine (Fully Connected) Layer.
+
+    Performs linear transformation: out = x · W + b
+    where:
+    - x is input from previous layer (batch of samples)
+    - W is weight matrix (learnable parameters)
+    - b is bias vector (learnable parameters)
+
+    This layer is the fundamental building block of neural networks,
+    connecting all neurons between layers.
+    """
+
+    def __init__(self, W, b):
+        """
+        Initialize Affine layer with weights and bias.
+
+        Args:
+            W: Weight matrix of shape (input_dim, output_dim)
+               Each column represents weights for one output neuron
+            b: Bias vector of shape (output_dim,)
+               Bias term added to each output neuron
+        """
+        # Learnable parameters
+        self.W = W  # Weights connecting input to output
+        self.b = b  # Bias terms
+
+        # Cache variables for backward pass
+        self.x = None  # Store input from forward pass (used to compute gradients)
+        self.dW = None  # Gradient of loss with respect to weights
+        self.db = None  # Gradient of loss with respect to bias
+
+    def forward(self, x):
+        """
+        Forward pass: Compute output = x @ W + b
+
+        Args:
+            x: Input data of shape (batch_size, input_dim)
+               Each row is one training sample
+
+        Returns:
+            out: Output of shape (batch_size, output_dim)
+                 Each row is the transformed feature vector for one sample
+
+        Mathematical formula:
+            out_ij = Σ_k x_ik * W_kj + b_j
+        """
+        # Cache input for backward pass (needed to compute dW)
+        self.x = x
+
+        # Linear transformation: (batch_size, input_dim) @ (input_dim, output_dim)
+        # Result shape: (batch_size, output_dim)
+        # Add bias broadcasting: bias (output_dim,) is added to each row
+        out = np.dot(x, self.W) + self.b
+        return out
+
+    def backward(self, dout):
+        """
+        Backward pass: Compute gradients and propagate error backwards.
+
+        Args:
+            dout: Gradient of loss with respect to output
+                  Shape: (batch_size, output_dim)
+
+        Returns:
+            dx: Gradient of loss with respect to input
+                Shape: (batch_size, input_dim)
+                Propagated to previous layer
+
+        Gradients computed:
+            dW: Gradient for weight update (batch_size, output_dim)
+            db: Gradient for bias update (output_dim,)
+
+        Mathematical derivations:
+            Let L be loss function.
+            Given: dout = ∂L/∂out
+
+            ∂L/∂x = ∂L/∂out · ∂out/∂x = dout · W^T
+            ∂L/∂W = x^T · dout
+            ∂L/∂b = Σ(dout) over batch dimension (axis=0)
+        """
+        # Compute gradient with respect to input (for backpropagation to previous layer)
+        # dx = dout * W^T
+        # Shape: (batch_size, output_dim) @ (output_dim, input_dim) = (batch_size, input_dim)
+        dx = np.dot(dout, self.W.T)
+
+        # Compute gradient with respect to weights
+        # dW = x^T * dout
+        # Shape: (input_dim, batch_size) @ (batch_size, output_dim) = (input_dim, output_dim)
+        self.dW = np.dot(self.x.T, dout)
+
+        # Compute gradient with respect to bias
+        # db = Σ(dout) over batch samples (axis=0)
+        # Shape: (output_dim,)
+        # We sum because bias is shared across all samples in the batch
+        self.db = np.sum(dout, axis=0)
+
+        return dx
+
+
+class SoftmaxWithLoss:
+    """
+    Softmax with Cross-Entropy Loss Layer.
+
+    Combines softmax activation and cross-entropy loss into a single layer
+    for numerical stability and computational efficiency.
+
+    This layer is typically used as the final layer in multi-class classification
+    networks. It converts logits to probabilities and computes the loss,
+    while also providing the gradient for backpropagation.
+    """
+
+    def __init__(self):
+        """
+        Initialize SoftmaxWithLoss layer.
+
+        This layer caches the predicted probabilities and target labels
+        for efficient gradient computation during backpropagation.
+        """
+        # Cache variables for backward pass
+        self.y = None  # Predicted probabilities after softmax (shape: batch_size, num_classes)
+        self.t = None  # Target labels (one-hot encoded or class indices)
+        self.loss = None  # Computed cross-entropy loss value
+
+    def forward(self, x, t):
+        """
+        Forward pass: Compute softmax probabilities and cross-entropy loss.
+
+        Args:
+            x: Input logits from previous layer (raw scores)
+               Shape: (batch_size, num_classes)
+               These are unnormalized scores before softmax
+            t: Target labels
+               Shape: (batch_size, num_classes) for one-hot encoding
+                     or (batch_size,) for class indices
+
+        Returns:
+            loss: Cross-entropy loss value (scalar)
+
+        Mathematical process:
+            1. y = softmax(x) → Convert logits to probabilities
+               y_i = exp(x_i) / Σ_j exp(x_j)
+            2. Loss = -Σ t_i * log(y_i) → Cross-entropy loss
+               Lower loss = better predictions
+        """
+        # Store target labels for backward pass
+        self.t = t
+
+        # Apply softmax to convert logits to probabilities
+        # Probabilities sum to 1 across classes for each sample
+        self.y = softmax(x)
+
+        # Compute cross-entropy loss between predictions and targets
+        # This measures how well predictions match true labels
+        self.loss = cross_entropy_error(self.y, self.t)
+
+        return self.loss
+
+    def backward(self, dout=1):
+        """
+        Backward pass: Compute gradient of loss with respect to input.
+
+        Args:
+            dout: Gradient from next layer (usually 1 for loss layer)
+                  Shape: scalar or (batch_size, num_classes)
+
+        Returns:
+            dx: Gradient of loss with respect to input logits
+                Shape: (batch_size, num_classes)
+
+        Mathematical derivation:
+            For softmax with cross-entropy loss, the gradient simplifies to:
+            ∂L/∂x = y - t (where t is one-hot encoded)
+
+            This elegant result combines:
+            - Derivative of cross-entropy loss: ∂L/∂y = -t/y
+            - Derivative of softmax: ∂y/∂x = y(1-y) for correct class, -y_i*y_j for others
+
+            The combined gradient is simply: (y - t)
+
+            We divide by batch_size to average gradient across samples.
+
+        Why this works:
+            The softmax and cross-entropy combination creates a gradient
+            that is the difference between predictions and true labels,
+            making it perfect for gradient-based optimization.
+        """
+        # Get batch size (number of samples)
+        batch_size = self.t.shape[0]
+
+        # Compute gradient
+        # dx = (predicted_probabilities - one_hot_targets) / batch_size
+        #
+        # For correct class: gradient = y - 1 (negative, pulling probability up)
+        # For incorrect classes: gradient = y - 0 (positive, pulling probability down)
+        #
+        # Division by batch_size averages gradients across all samples
+        dx = (self.y - self.t) / batch_size # Average gradient
+
         return dx
