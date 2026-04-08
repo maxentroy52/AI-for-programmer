@@ -1,20 +1,5 @@
 import numpy as np
 
-
-def softmax(x):
-    """
-    Activation function for output layer (multi-class classification).
-    Converts raw scores to probability distribution.
-    Output values sum to 1, each between 0 and 1.
-    Used with cross-entropy loss for training.
-    """
-    x_max = np.max(x)
-    x_new = x - x_max
-    x_new_exp = np.exp(x_new)
-    x_new_exp_sum = np.sum(x_new_exp)
-    return x_new_exp / x_new_exp_sum
-
-
 def cross_entropy_error(y, t):
     """
     Cross-entropy loss function for multi-class classification.
