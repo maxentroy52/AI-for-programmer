@@ -1,8 +1,7 @@
 import numpy as np
-from werkzeug.serving import load_ssl_context
 
-from common_activation import softmax
-from common_activation import cross_entropy_error
+from common import softmax
+from common import cross_entropy_error
 
 class Relu():
     """
