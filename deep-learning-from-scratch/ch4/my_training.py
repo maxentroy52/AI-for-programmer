@@ -39,7 +39,7 @@ class ImageRecognizerNN():
         print(f"iterations is: {self.iterations}")
         print(f"batch size is: {self.batch_size}")
 
-    ## ---------------------------- Forward process for ImageRecognizer-----------------------------------
+    ## ---------------------------- Forward process for ImageRecognizer -----------------------------------
     def predict(self, x):
         a1 = np.dot(x, self.model['W1']) + self.model['b1']
         z1 = sigmoid(a1)
@@ -48,7 +48,7 @@ class ImageRecognizerNN():
         y = softmax(a2)
         return y
 
-    ## ---------------------------- Training process for ImageRecognizer-----------------------------------
+    ## ---------------------------- Training process for ImageRecognizer -----------------------------------
     ## Training process for ImageRecognizer
     # First, we need to define the loss function.
     # Raw sample + label = x + t
@@ -129,6 +129,29 @@ class ImageRecognizerNN():
 
     ## ---------------------------- Acc calculation -----------------------------------
     def accuracy(self, x_test, t_test):
+
+        """
+        Step 1 - Raw predictions (probabilities):
+        Shape: (10, 3)
+        y_pred =
+         [[0.8 0.1 0.1]
+         [0.2 0.7 0.1]
+         [0.1 0.2 0.7]
+         [0.6 0.3 0.1]
+         [0.3 0.6 0.1]
+         [0.1 0.1 0.8]
+         [0.9 0.05 0.05]
+         [0.2 0.2 0.6]
+         [0.1 0.8 0.1]
+         [0.7 0.2 0.1]]
+
+        Step 2 - Predicted class indices (argmax on axis=1):
+        Shape: (10, 1)
+        y_pred = [0 1 2 0 1 2 0 2 1 0]
+        (0=Cat, 1=Dog, 2=Bird)
+
+
+        """
         y_pred = self.predict(x_test)
         y_pred = y_pred.argmax(axis=1)
         t_test = t_test.argmax(axis=1)

@@ -42,3 +42,43 @@ def cross_entropy_error(y, t):
 
     # Extract predicted probabilities for true labels and compute average negative log
     return -np.sum(np.log(y[np.arange(batch_size), t] + delta)) / batch_size
+
+def numerical_gradient_nd(f, x):
+    """
+    Calculate numerical gradient for multi-dimensional arrays using central difference method.
+    Perturbs each element individually to approximate partial derivatives.
+
+    Formula: f'(x) ≈ (f(x+h) - f(x-h)) / (2h)
+
+    Parameters:
+        f: Function that takes x as parameter and returns loss value
+        x: Multi-dimensional array (weights/biases) to calculate gradient for
+
+    Returns:
+        Gradient array with same shape as x
+    """
+    h = 1e-4  # Small perturbation value (0.0001)
+    grad = np.zeros_like(x)  # Initialize gradient array with zeros
+
+    # Iterate through each element in the multi-dimensional array
+    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+    while not it.finished:
+        idx = it.multi_index  # Get current element's position (e.g., (row, col))
+        tmp_val = x[idx]  # Store original value
+
+        # Calculate f(x + h)
+        x[idx] = tmp_val + h
+        fxh1 = f(x)
+
+        # Calculate f(x - h)
+        x[idx] = tmp_val - h
+        fxh2 = f(x)
+
+        # Central difference approximation of derivative
+        grad[idx] = (fxh1 - fxh2) / (2 * h)
+
+        # Restore original value
+        x[idx] = tmp_val
+        it.iternext()
+
+    return grad
