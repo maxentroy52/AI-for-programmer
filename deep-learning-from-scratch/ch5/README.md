@@ -166,3 +166,31 @@ class Affine:
         # We sum because bias is shared across all samples in the batch
         self.db = np.sum(dout, axis=0)
 ```
+
+## 梯度计算
+
+看下面代码，其实上一章已经讨论过了，这里我再讨论一下。
+
+- loss_W当中，lambda函数体，并没有真的使用将lambda参数传入，看起来不需要。但内部是使用的，这里只是形式。
+- loss_W = f(theta, x, t)，至于到底是谁的函数，其实取决于你希望它是谁的函数。
+- 在numerical_gradient_nd的计算当中，我们其实可以看出俩。这个函数 ```numerical_gradient_nd(f, x)```
+  - 自变量是x，意味着会对x进行取增量，然后计算微分
+  - ```numerical_gradient_nd(loss_W, self.params['W1'])``` 从实际调用中，可以看出来，```x = self.params['W1']```
+  - 所以，自变量是W1
+  - 带入sample(x, t)也是重要的，这样loss_w的形式才能最终定下来。
+
+```python
+    def gradient_numerical(self, x, t):
+        grads = {}
+
+        loss_W = lambda W: self.loss(x, t)
+
+        grads['W1'] = numerical_gradient_nd(loss_W, self.params['W1'])
+        grads['b1'] = numerical_gradient_nd(loss_W, self.params['b1'])
+        grads['W2'] = numerical_gradient_nd(loss_W, self.params['W2'])
+        grads['b2'] = numerical_gradient_nd(loss_W, self.params['b2'])
+
+        return grads
+```
+
+以上，其实我之前一直忽略了一点，就是在training的时候，我们计算loss，**本质也是一次forward**
