@@ -353,6 +353,7 @@ Backpropagation is the algorithm that efficiently computes that contribution (th
 
 不过，对于算子而言，输入并不是模型参数，那这个对模型参数的导数是怎么求的？
 
+下面的backward过程是好理解的，但是每一个layer只对input variables求导，对于AffineLayer来说，w,b不是input variables，那它怎么求导？
 
 ```python
     def gradient(self, x, t):
@@ -373,5 +374,151 @@ Backpropagation is the algorithm that efficiently computes that contribution (th
         grads['b1'] = self.layers['Affine1'].db
         grads['W2'] = self.layers['Affine2'].dW
         grads['b2'] = self.layers['Affine2'].db
+        return grads
+```
+
+传统的layer算子
+
+- forward过程，对x and y进行计算
+- backward过程，对x and y进行求导
+- 算子从接口设计来说，是不带状态的，输入输出全通过参数的形式给出
+- 但实际上，这个算子是带状态的，因为它有成员，forward时进行缓存
+- 但，本质是在training过程时，先forward进行缓存，然后backward
+- 这么做的好处是，即使对于数值微分的办法，在进行参数更新时，导数的技术也需要一次forward
+- 也即，forward不能省，既然不能省，这里的开销对两种办法是一样的。bp的办法通过缓存，还加速了导数的计算过程
+
+```python
+class MulLayer:
+    def __init__(self):
+        self.x = None
+        self.y = None
+
+    def forward(self, x, y):
+        self.x = x
+        self.y = y
+        out = x * y
+        return out
+
+    # On the other hand, backward multiplies the derivative from the upstream(dout)
+    # by the reserved value of forward propagation and passes the result downstream.
+    def backward(self, dout):
+        dx = dout * self.y
+        dy = dout * self.x
+        return dx, dy
+```
+
+那么我们看下Affine是怎么计算的
+- 输入参数，只有x
+- w,b是辅助参数
+- 这是为什么？
+
+```python
+class Affine:
+    def __init__(self, W, b):
+        # Learnable parameters
+        self.W = W  # Weights connecting input to output
+        self.b = b  # Bias terms
+
+        # Cache variables for backward pass
+        self.x = None  # Store input from forward pass (used to compute gradients)
+        self.dW = None  # Gradient of loss with respect to weights
+        self.db = None  # Gradient of loss with respect to bias
+
+    def forward(self, x):
+        self.x = x
+        out = np.dot(x, self.W) + self.b
+        return out
+
+    def backward(self, dout):
+        dx = np.dot(dout, self.W.T)
+        self.dW = np.dot(self.x.T, dout)
+        self.db = np.sum(dout, axis=0)
+
+        return dx
+
+class Relu():
+    def __init__(self):
+        self.mask = None
+
+    def forward(self, x):
+        self.mask = (x <= 0)
+        out = x.copy()
+        out[self.mask] = 0
+        return out
+
+    def backward(self, dout):
+        dx = dout.copy()
+        dx[self.mask] = 0
+        return dx
+
+class SoftmaxWithLoss:
+    def __init__(self):
+        self.y = None  # Predicted probabilities after softmax (shape: batch_size, num_classes)
+        self.t = None  # Target labels (one-hot encoded or class indices)
+        self.loss = None  # Computed cross-entropy loss value
+
+    def forward(self, x, t):
+        self.t = t
+        self.y = softmax(x)
+        self.loss = cross_entropy_error(self.y, self.t)
+
+        return self.loss
+
+    def backward(self, dout=1):
+        batch_size = self.t.shape[0]
+        dx = (self.y - self.t) / batch_size # Average gradient
+
+        return dx
+```
+
+看下面的图，同时结合上面的核心算子，容易得到如下结论
+- w,b,t不会在继续反向传播了
+- 一直在反向传播的只有a1,z1,a2,y,loss
+- 所以，如果不反向传播，没有必要backward时返回。
+  - 但是，没有必要返回，不代表没有必要计算。不返回，只是因为后续算子的计算，不依赖它。
+  - 是否计算，就看是否需要。比如t不需要，就不计算dt。dw/db需要，就计算然后缓存。
+- 那么，到这里，我们就全搞明白了。
+  - 后续算子依赖的导数，就需要backward时返回，那么参数设计时，它必须是forward的入参，同时是backward的返回
+  - 后续算子不依赖的导数，就看实际是否需要，如果需要，缓存即可
+
+![foward-backward](./pic/forward-process.png "forward-backward")
+
+最后，我们再回到梯度计算代码。只有在training时才发挥作用
+- BP
+  - forward过程，缓存backward用到的变量
+  - backward过程，最后直接到affine layer里面获取即可
+- ND
+  - forward过程，比如1000个(sample, label)，带入loss。函数是不是关于w的函数，同时在带入当前w，就可以计算当前w的微分
+  - backward过程，数值微分，对每一个参数给一个增量，然后计算微分
+
+```python
+    def gradient(self, x, t):
+        # forward
+        self.loss(x, t)
+
+        # backward
+        dout = 1
+        dout = self.last_layer.backward(dout)
+        layers = list(self.layers.values())
+        layers.reverse()
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        # settings
+        grads = {}
+        grads['W1'], grads['b1'] = self.layers['Affine1'].dW, self.layers['Affine1'].db
+        grads['W2'], grads['b2'] = self.layers['Affine2'].dW, self.layers['Affine2'].db
+        return grads
+
+    def gradient_numerical(self, x, t):
+        grads = {}
+
+        loss_W = lambda W: self.loss(x, t)
+
+        grads['W1'] = numerical_gradient_nd(loss_W, self.model['W1'])
+        grads['b1'] = numerical_gradient_nd(loss_W, self.model['b1'])
+        grads['W2'] = numerical_gradient_nd(loss_W, self.model['W2'])
+        grads['b2'] = numerical_gradient_nd(loss_W, self.model['b2'])
+
         return grads
 ```
