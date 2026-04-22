@@ -82,3 +82,29 @@ def numerical_gradient_nd(f, x):
         it.iternext()
 
     return grad
+
+def plot_results(loss_list, train_acc_list, test_acc_list):
+    import matplotlib.pyplot as plt
+
+    # Graph 1: Loss
+    plt.figure(figsize=(12, 4))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(loss_list)
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.title('Training Loss')
+    plt.grid(True)
+
+    # Graph 2: Accuracy
+    plt.subplot(1, 2, 2)
+    plt.plot(train_acc_list, label='Train Acc', marker='o')
+    plt.plot(test_acc_list, label='Test Acc', marker='s')
+    plt.xlabel('Epoch (every 10 iterations)')
+    plt.ylabel('Accuracy')
+    plt.title('Training vs Test Accuracy')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()

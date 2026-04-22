@@ -173,7 +173,7 @@ class Affine:
 
 - loss_W当中，lambda函数体，并没有真的使用将lambda参数传入，看起来不需要。但内部是使用的，这里只是形式。
 - loss_W = f(theta, x, t)，至于到底是谁的函数，其实取决于你希望它是谁的函数。
-- 在numerical_gradient_nd的计算当中，我们其实可以看出俩。这个函数 ```numerical_gradient_nd(f, x)```
+- 在numerical_gradient_nd的计算当中，我们其实可以看出来。这个函数 ```numerical_gradient_nd(f, x)```
   - 自变量是x，意味着会对x进行取增量，然后计算微分
   - ```numerical_gradient_nd(loss_W, self.params['W1'])``` 从实际调用中，可以看出来，```x = self.params['W1']```
   - 所以，自变量是W1
@@ -204,7 +204,7 @@ class Affine:
 - normalization
 - loss
 
-以上几种操作，在计算图里面，同一理解为一个个计算节点。
+以上几种操作，在计算图里面，统一理解为一个个计算节点。
 
 所以，NN网络的组织就会发生变化
 
@@ -277,7 +277,7 @@ class TwoLayerNet():
 - z1/z2的计算过程，也是一样的。所以，也抽象
   - hidden layer都是Relu
   - last layer都是softmax(分类问题都是这样)
-- 对于forward过程，其实softmax不需要，所以第二版没有计算计算，节省算力，latency
+- 对于forward过程，其实softmax不需要，所以第二版没有计算，节省算力，latency
 - 对于backward过程，需要soft max with loss，所以多一层，用在training.
 
 ## Backward propagation
@@ -384,8 +384,9 @@ Backpropagation is the algorithm that efficiently computes that contribution (th
 - 算子从接口设计来说，是不带状态的，输入输出全通过参数的形式给出
 - 但实际上，这个算子是带状态的，因为它有成员，forward时进行缓存
 - 但，本质是在training过程时，先forward进行缓存，然后backward
-- 这么做的好处是，即使对于数值微分的办法，在进行参数更新时，导数的技术也需要一次forward
-- 也即，forward不能省，既然不能省，这里的开销对两种办法是一样的。bp的办法通过缓存，还加速了导数的计算过程
+- 这么做的好处是，即使对于数值微分的办法，在进行参数更新时，导数的计算也需要一次forward(本质是带入x,t)
+- 也即，forward不能省，既然不能省，这里的开销对两种办法没有区别。bp的办法通过缓存，还加速了导数的计算过程。
+- 当然，bp之所以快，主要还是因为避免了重复计算
 
 ```python
 class MulLayer:
