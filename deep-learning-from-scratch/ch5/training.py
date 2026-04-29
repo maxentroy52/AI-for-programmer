@@ -16,7 +16,7 @@ def training():
     iters_num = 10000
     train_size = x_train.shape[0]
     batch_size = 100
-    learning_rate = 0.01
+    learning_rate = 0.1
 
     training_loss_list = []
 
