@@ -1,17 +1,21 @@
 import numpy as np
 
+# def softmax(x):
+#     """
+#     Activation function for output layer (multi-class classification).
+#     Converts raw scores to probability distribution.
+#     Output values sum to 1, each between 0 and 1.
+#     Used with cross-entropy loss for training.
+#     """
+#     x_max = np.max(x)
+#     x_new = x - x_max
+#     x_new_exp = np.exp(x_new)
+#     x_new_exp_sum = np.sum(x_new_exp)
+#     return x_new_exp / x_new_exp_sum
+
 def softmax(x):
-    """
-    Activation function for output layer (multi-class classification).
-    Converts raw scores to probability distribution.
-    Output values sum to 1, each between 0 and 1.
-    Used with cross-entropy loss for training.
-    """
-    x_max = np.max(x)
-    x_new = x - x_max
-    x_new_exp = np.exp(x_new)
-    x_new_exp_sum = np.sum(x_new_exp)
-    return x_new_exp / x_new_exp_sum
+    x = x - np.max(x, axis=-1, keepdims=True)
+    return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
 
 def cross_entropy_error(y, t):
     """
@@ -37,11 +41,14 @@ def cross_entropy_error(y, t):
     delta = 1e-7  # Small constant to prevent log(0)
 
     # Convert one-hot encoded labels to index labels if needed
+    # CRITICAL: Don't modify the input t
     if t.ndim == 2:
-        t = np.argmax(t, axis=1)
+        t_indices = np.argmax(t, axis=1)  # Create new array
+    else:
+        t_indices = t  # Already indices
 
     # Extract predicted probabilities for true labels and compute average negative log
-    return -np.sum(np.log(y[np.arange(batch_size), t] + delta)) / batch_size
+    return -np.sum(np.log(y[np.arange(batch_size), t_indices] + delta)) / batch_size
 
 def numerical_gradient_nd(f, x):
     """

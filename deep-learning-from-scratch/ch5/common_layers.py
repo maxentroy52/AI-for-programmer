@@ -316,6 +316,15 @@ class SoftmaxWithLoss:
         # For incorrect classes: gradient = y - 0 (positive, pulling probability down)
         #
         # Division by batch_size averages gradients across all samples
-        dx = (self.y - self.t) / batch_size # Average gradient
+
+        # There is the wrong implementation.
+        # dx = (self.y - self.t) / batch_size # Average gradient
+
+        if self.t.size == self.y.size:
+            dx = (self.y - self.t) / batch_size
+        else:
+            dx = self.y.copy()
+            dx[np.arange(batch_size), self.t] -= 1
+            dx = dx / batch_size
 
         return dx
