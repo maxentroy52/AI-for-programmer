@@ -44,23 +44,18 @@ class Affine:
         self.grads[1][...] = db
         return dx
 
-class SigmoidWithLoss:
+class SoftmaxWithLoss:
     def __init__(self):
         self.params, self.grads = [], []
-        self.loss = None
         self.y = None
         self.t = None
 
     def forward(self, x, t):
         self.t = t
-        self.y = 1 / (1 + np.exp(-x))
+        self.y = softmax(x)
 
-        self.loss = cross_entropy_error(np.c_[1 - self.y, self.y], self.t)
+        if self.t.size == self.y.size:
+            self.t = self.t.argmax(axis=1)
 
-        return self.loss
-
-    def backward(self, dout=1):
-        batch_size = self.t.shape[0]
-
-        dx = (self.y - self.t) * dout / batch_size
-        return dx
+        loss = cross_entropy_error(self.y, self.t)
+        return loss
