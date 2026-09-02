@@ -1,3 +1,5 @@
+# Contains building blocks (layers) that can be stacked to create a network
+
 import numpy as np
 from common.functions import softmax, cross_entropy_error
 
@@ -46,8 +48,8 @@ class SigmoidWithLoss:
     def __init__(self):
         self.params, self.grads = [], []
         self.loss = None
-        self.y = None  # sigmoidの出力
-        self.t = None  # 教師データ
+        self.y = None
+        self.t = None
 
     def forward(self, x, t):
         self.t = t
