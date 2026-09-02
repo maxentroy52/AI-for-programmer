@@ -1,5 +1,4 @@
 # Contains helper functions
-
 # coding: utf-8
 import numpy as np
 from tornado.util import basestring_type

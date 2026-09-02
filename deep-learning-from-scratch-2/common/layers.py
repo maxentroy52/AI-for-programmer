@@ -1,5 +1,5 @@
 # Contains building blocks (layers) that can be stacked to create a network
-
+# coding: utf-8
 import numpy as np
 from common.functions import softmax, cross_entropy_error
 
