@@ -88,6 +88,14 @@ def test():
     print(C)
 
     W = ppmi(C)
+    print('-----------------W-----------------')
     print(W)
+
+    # SVD
+    U, S, V = np.linalg.svd(W)
+
+    print('-----------------U-----------------')
+    print(U)
+    #print(S)
 
 test()
