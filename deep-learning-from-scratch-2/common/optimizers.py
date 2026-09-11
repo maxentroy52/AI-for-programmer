@@ -1,6 +1,8 @@
 # Contains optimization algorithms
 # coding: utf-8
 
+import numpy as np
+
 class SGD:
     '''
     Stochastic Gradient Descent
