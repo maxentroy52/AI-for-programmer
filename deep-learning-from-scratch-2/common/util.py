@@ -3,6 +3,11 @@
 import numpy as np
 
 def preprocess(text):
+    # 这一块本质是tokenizer的过程
+    # words本质是token id list.
+    # vocab means unique token id list.
+    # corpus并不是token id list 因为它并不唯一
+    # 它是原始文本的token id表达
     text = text.lower()
     text = text.replace('.', ' .')
     words = text.split(' ')
@@ -71,10 +76,62 @@ def ppmi(C, verbose=False, eps=1e-8):
 
     return M
 
+# 拿到contexts and targets的token id 表达
+def create_contexts_target(corpus, window_size=1):
+    target = corpus[window_size:-window_size]
+    contexts = []
+
+    for idx in range(window_size, len(corpus) - window_size):
+        cs = []
+        for t in range(-window_size, window_size + 1):
+            if t == 0 : continue
+            cs.append(corpus[idx + t])
+        contexts.append(cs)
+
+    # The neural network is fundamentally doing linear algebra,
+    # and linear algebra wants arrays, not lists.
+    return np.array(contexts), np.array(target)
+
+# corpus in convert_one_hot is a parameter name, not "the corpus."
+# It just means "some array of word IDs."
+# 1D case: target
+# target = [1, 2, 3, 4, 1, 5]
+# 2D case: contexts
+# From the same function:
+#
+# python
+# contexts = [[0, 2],      # sample 0: context of "say" is ["you", "goodbye"]
+#             [1, 3],      # sample 1: context of "goodbye" is ["say", "and"]
+#             [2, 4],      # sample 2
+#             [3, 1],      # sample 3
+#             [4, 5],      # sample 4
+#             [1, 6]]      # sample 5
+# # shape (6, 2)
+# This is a 2D array — one row per sample, and each row has multiple word IDs (the context words).
+
+def convert_one_hot(corpus, vocab_size):
+    N = corpus.shape[0]
+    if corpus.ndim == 1:
+        # N是样本数
+        # one hot的维度就是vocab size
+        one_hot = np.zeros((N, vocab_size), dtype=np.int32)
+        for idx, word_id in enumerate(corpus):
+            one_hot[idx, word_id] = 1
+    elif corpus.ndim == 2:
+        C = corpus.shape[1]
+        one_hot = np.zeros((N, C, vocab_size), dtype=np.int32)
+        for idx_0, word_ids in enumerate(corpus):
+            for idx_1, word_id in enumerate(word_ids):
+                one_hot[idx_0, idx_1, word_id] = 1
+
+    return one_hot
+
 def test():
     text = 'You say goodbye and I say hello.'
     corpus, word_to_id, id_to_word = preprocess(text)
+    target = corpus[1:-1]
     print(corpus)
+    print(target)
     print(word_to_id)
     print(id_to_word)
 
@@ -97,5 +154,17 @@ def test():
     print('-----------------U-----------------')
     print(U)
     #print(S)
+
+    print('test create_contexts_target')
+    contexts, target = create_contexts_target(corpus, window_size=1)
+    print(contexts)
+    print(target)
+
+    print('test one hot')
+    vocab_size = len(word_to_id)
+    target_onehot = convert_one_hot(target, vocab_size)
+    print(target_onehot)
+    contexts_onehot = convert_one_hot(contexts, vocab_size)
+    print(contexts_onehot)
 
 test()
