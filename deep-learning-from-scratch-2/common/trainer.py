@@ -23,7 +23,8 @@ class Trainer:
 
         total_loss = 0
         loss_count = 0
-
+        print('data_size: %d | batch_size: %d | max_iters: %d | eval_interval: %d'
+              % (data_size, batch_size, max_iters, eval_interval))
         for epoch in range(max_epoch):
             # 打乱数据
             idx = np.random.permutation(data_size)
