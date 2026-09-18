@@ -59,7 +59,6 @@ class Softmax:
         dx -= self.out * sumdx
         return dx
 
-
 class SoftmaxWithLoss:
     def __init__(self):
         self.params, self.grads = [], []
@@ -121,3 +120,31 @@ class SigmoidWithLoss:
 
         dx = (self.y - self.t) * dout / batch_size
         return dx
+
+class Embedding:
+    def __init__(self, W):
+        self.params = [W]
+        self.grads = np.zeros_like(W)
+        self.idx = None # it's a cache variable.
+
+    def forward(self, idx):
+        W, = self.params
+        self.idx = idx
+        out = W[idx]
+        return out
+
+    def backward(self, dout):
+        dW  , = self.grads
+        dW[...] = 0
+
+        # 这里forward和backward反过来
+        # 前者取一行
+        # 后者把dout赋值到这一行
+        # 但是可能有重复的下标
+        # 所以 累加到这一行
+        # 本质矩阵乘法
+        np.add.at(dW, self.idx, dout)
+
+        # 这里其实没有操作数传进来
+        # 所有不用反向传播它的导数给上游
+        return None
