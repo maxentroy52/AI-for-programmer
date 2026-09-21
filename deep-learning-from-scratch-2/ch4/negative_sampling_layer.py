@@ -82,6 +82,16 @@ class NegativeSamplingLoss():
         loss = self.loss_layers[0].forward(score, correct_label)
 
         # negative sample
+        # + - -
+        # + - -
+        # + - -
+        # + - -
+        # + - -
+        # batch size = 5 sample size = 2
+        # 下面的代码 按照sample size遍历 其实就是按例遍历
+        # 第一列 拿出来5个sample的第一个负例 给第一层
+        # 是这么个意思 批处理计算了
+        # 这样其实也就不care batch了
         negative_label = np.zeros(batch_size, dtype=np.int32)
         for i in range(self.sample_size):
             negative_target = negative_sample[:, i]
