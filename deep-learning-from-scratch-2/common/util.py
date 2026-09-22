@@ -178,4 +178,4 @@ def test():
     contexts_onehot = convert_one_hot(contexts, vocab_size)
     print(contexts_onehot)
 
-test()
+#test()

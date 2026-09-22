@@ -124,7 +124,7 @@ class SigmoidWithLoss:
 class Embedding:
     def __init__(self, W):
         self.params = [W]
-        self.grads = np.zeros_like(W)
+        self.grads = [np.zeros_like(W)]
         self.idx = None # it's a cache variable.
 
     # Embedding layer的出现 本质是为了替换MalMul
@@ -137,7 +137,7 @@ class Embedding:
         return out
 
     def backward(self, dout):
-        dW  , = self.grads
+        dW, = self.grads
         dW[...] = 0
 
         # 这里forward和backward反过来

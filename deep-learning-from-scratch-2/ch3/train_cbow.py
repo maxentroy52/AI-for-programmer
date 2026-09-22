@@ -11,7 +11,7 @@ window_size = 1
 hidden_size = 3
 batch_size = 3
 max_epoch = 1000
-eval_interval = 1
+eval_interval = 2
 
 # 2.读入数据-预处理(准备训练样本 -  sample(raw + label) one-hot)
 text = 'You say goodbye and I say hello.'
