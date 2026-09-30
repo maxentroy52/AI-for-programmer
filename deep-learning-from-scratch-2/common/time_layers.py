@@ -1,6 +1,7 @@
 import numpy as np
 
 from common.layers import Embedding
+from common.functions import softmax
 
 # 这个类的backward方法 实现的非常典型 就是按照forward的数序 复合函数求导 利用chain rule
 class RNN:
@@ -162,6 +163,9 @@ class TimeRNN:
 
 # 准备T个embedding 层
 # 处理各个时刻的数据即可
+# TimeEmbedding/TimeAffine看起来可以并行
+# 这里实现成串行 有一些好处吧 比如backward求导时方便累加 但不是绝对原因 也可以并行
+# TimeClass的好处是 作为一个wrapper 向下屏蔽实现细节 向上提供简单的接口
 class TimeEmbedding:
     def __init__(self, W):
         self.params = [W]
@@ -202,3 +206,104 @@ class TimeEmbedding:
         self.grads[0][...] = grad
 
         return None
+
+# 如上所言
+# TimeAffine/TimeEmbedding 可以并行 xs是一下拿到的
+# TimeAffine采用了并行的方式实现 没有构造layers in serial manner
+class TimeAffine:
+    def __init__(self, W, b):
+        self.params = [W, b]
+        self.grads = [np.zeros_like(W), np.zeros_like(b)]
+        self.xs = None
+
+    # 这个不赘述
+    # 可以看一个数据例子
+    # 多个矩阵合并后一起计算
+    def forward(self, xs):
+        # 注意
+        # TimeEmbedding的forward拿到的是idx 要取embedding
+        # TimeAffine拿到的就已经是Embedding了
+        N, T, D = xs.shape
+
+        W, b = self.params
+
+        xs_new = xs.reshape(N*T, -1)
+        out = np.dot(xs_new, W) + b
+        self.xs = xs
+
+        return out.reshape(N, T, -1)
+
+    def backward(self, dout):
+        xs = self.xs
+
+        N, T, D = xs.shape
+        W, b = self.params
+
+        dout = dout.reshape(N*T, -1)
+        xs_new = xs.reshape(N*T, -1)
+
+        db = np.sum(dout, axis=0)
+        dW = np.dot(xs_new.T, dout)
+        dxs = np.dot(dout, W.T)
+        dxs = dxs.reshape(*xs.shape)
+
+        self.grads[0][...] = dW
+        self.grads[1][...] = db
+
+        return dxs
+
+# 这个类的网络结构参考书中结构
+# 有两点说明
+# 1.对于时序数据来说
+class TimeSoftmaxWithLoss:
+    def __init__(self):
+        self.params, self.grads = [], []
+        self.cache = None
+        self.ignore_label = -1
+
+    def forward(self, xs, ts):
+        N, T, V = xs.shape
+
+        # sample 0: [i, love, cats]   → 3 real words
+        # sample 1: [hi, PAD, PAD]    → 1 real word, 2 padding
+        #
+        # 这里是一个非常关键的点
+        # 序列长度3对吧 不是每一个序列都能到这个长度
+        # 那怎么统一处理？
+        # Process each sample separately, one at a time, no batch. → slow, no GPU parallelism. ✗
+        # Make T = 1 (the shortest) → then sample 0 can't fit. ✗
+        # Make T = 3 (the longest) → sample 1 has 2 empty slots to fill. What goes there? → padding. ✓
+        #
+        # 所以 唯一的办法就是padding
+        # 下面的代码主要就是识别出这些padding label
+        # 用mask标记出来
+        #
+        if ts.ndim == 3:
+            ts = ts.argmax(axis = 2)
+        mask = (ts != self.ignore_label)
+
+        xs = xs.reshape(N*T, V)
+        ts= ts.reshape(N*T)
+        mask = mask.reshape(N*T)
+
+        ys = softmax(xs)
+        ls = np.log( ys[np.arange(N * T), ts] )
+        ls *= mask # ignore label损失设为0
+        loss = -np.sum(ls, axis = 1)
+        loss /= mask.sum()
+
+        self.cache = (ts, ys, mask, (N,T,V))
+        return loss
+
+    def backward(self, dout=1):
+        ts, ys, mask, (N, T, V) = self.cache
+
+        dx = ys
+        dx[np.arange(N * T), ts] -= 1
+        dx *= dout
+        dx /= mask.sum()
+        dx *= mask[:, np.newaxis]
+        dx = dx.reshape((N, T, V))
+
+        # Token = one unit in the sequence (the model's atomic input/output element)
+        return dx
