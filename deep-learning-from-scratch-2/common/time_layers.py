@@ -10,53 +10,55 @@ class RNN:
         self.grads = [np.zeros_like(Wx), np.zeros_like(Wh), np.zeros_like(b)]
         self.cache = None
 
-        # forward这里的注意项
-        # 1.推理计算出h_next即可 softmax + loss 这个是training需要做的
-        # 按照以前的层次理解 这里就是算分 只不过实际是保留状态 获取记忆
-        # 2.cache缓存的是 training计算导数时用的变量
-        def forward(self, x, h_prev):
-            Wx, Wh, b = self.params
+    # forward这里的注意项
+    # 1.推理计算出h_next即可 softmax + loss 这个是training需要做的
+    # 按照以前的层次理解 这里就是算分 只不过实际是保留状态 获取记忆
+    # 2.cache缓存的是 training计算导数时用的变量
+    def forward(self, x, h_prev):
+        Wx, Wh, b = self.params
 
-            t = np.dot(x, Wx) + np.dot(h_prev, Wh) + b
-            h_next = np.tanh(t)
+        t = np.dot(x, Wx) + np.dot(h_prev, Wh) + b
+        h_next = np.tanh(t)
 
-            self.cache = (x, h_prev, h_next)
-            return h_next
+        self.cache = (x, h_prev, h_next)
+        return h_next
 
-        # backward注意事项
-        # 1.backward的输入就是forward的输出变量的导数
-        # 2.backward的输出就是forward的输入 + 参数
-        # 当然 是否真的返回这么多 不必要
-        # 首先 参数不用返回
-        # 其次 不用前向传播的 不用返回
-        def backward(self, dh_next):
-            x, h_prev, h_next = self.cache
+    # backward注意事项
+    # 1.backward的输入就是forward的输出变量的导数
+    # 2.backward的输出就是forward的输入 + 参数
+    # 当然 是否真的返回这么多 不必要
+    # 首先 参数不用返回
+    # 其次 不用前向传播的 不用返回
+    def backward(self, dh_next):
+        Wx, Wh, b = self.params
 
-            # dt = dh_next * (partial h_hext by partial t)
-            dt = dh_next * (1 - h_next**2)
+        x, h_prev, h_next = self.cache
 
-            # db = dt * ( partial t by partial b )
-            db = np.sum(dt, axis=1)
+        # dt = dh_next * (partial h_hext by partial t)
+        dt = dh_next * (1 - h_next**2)
 
-            # dwh = dt * (partial t by partial wh)
-            dWh = np.dot(h_prev.T, dt)
+        # db = dt * ( partial t by partial b )
+        db = np.sum(dt, axis=0)
 
-            # dh_prev = dt * (partial t by partial h_prev)
-            dh_prev = np.dot(dt, Wh.T)
+        # dwh = dt * (partial t by partial wh)
+        dWh = np.dot(h_prev.T, dt)
 
-            # dwx = dt * (partial t by partial wx)
-            dWx = np.dot(x.T, dt)
+        # dh_prev = dt * (partial t by partial h_prev)
+        dh_prev = np.dot(dt, Wh.T)
 
-            # dx = dt * (partial t by partial x)
-            dx = np.dot(dt, Wx.T)
+        # dwx = dt * (partial t by partial wx)
+        dWx = np.dot(x.T, dt)
 
-            # deep copy
-            # store them in self.grads for later use.
-            self.grads[0][...] = dWx
-            self.grads[1][...] = dWh
-            self.grads[2][...] = db
+        # dx = dt * (partial t by partial x)
+        dx = np.dot(dt, Wx.T)
 
-            return dx, dh_prev
+        # deep copy
+        # store them in self.grads for later use.
+        self.grads[0][...] = dWx
+        self.grads[1][...] = dWh
+        self.grads[2][...] = db
+
+        return dx, dh_prev
 
 # RNN class并没有真正的实现 RNN的 loop
 # 只是building block 一个层的计算
@@ -289,7 +291,7 @@ class TimeSoftmaxWithLoss:
         ys = softmax(xs)
         ls = np.log( ys[np.arange(N * T), ts] )
         ls *= mask # ignore label损失设为0
-        loss = -np.sum(ls, axis = 1)
+        loss = -np.sum(ls)
         loss /= mask.sum()
 
         self.cache = (ts, ys, mask, (N,T,V))
