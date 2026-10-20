@@ -3,6 +3,7 @@ sys.path.append("..")
 
 from common.optimizers import SGD
 from common.trainer import RnnlmTrainer
+from common.util import eval_perplexity
 from dataset import ptb
 from rnnlm import Rnnlm
 
@@ -19,7 +20,7 @@ max_grad = 0.25
 # 这里原始拿到的都是id
 # corpus其实是corpus_train corpus_test就是测试集
 corpus, word_to_id, id_to_word = ptb.load_data('train')
-#corpus_test, _, _ = ptb.load_data('test')
+corpus_test, _, _ = ptb.load_data('test')
 vocab_size = len(word_to_id)
 # 对比上一章的RNN
 # 这里没有截断 使用全部训练数据
@@ -36,6 +37,14 @@ model = Rnnlm(vocab_size, wordvec_size, hidden_size)
 optimizer = SGD(lr)
 trainer = RnnlmTrainer(model, optimizer)
 
-# 4.训练
+# 4.训练(应用梯度剪裁进行学习)
 trainer.fit(xs, ts, max_epoch, batch_size, time_size, max_grad, eval_interval=20)
 trainer.plot(ylim=(0, 500))
+
+# 5.基于测试集数据进行评测(以往没有)
+model.reset_state()
+ppl_test = eval_perplexity(model, corpus_test)
+print('test perplexity: ', ppl_test)
+
+# 6.保存模型
+model.save_params()
