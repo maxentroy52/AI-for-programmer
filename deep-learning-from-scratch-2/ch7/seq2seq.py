@@ -85,28 +85,54 @@ class Decoder(BaseModel):
             self.params += layer.params
             self.grads += layer.grads
 
-        def forward(self, xs, h):
-            self.lstm_layer.set_state(h)
+    # 这里注意 forward本质给training使用
+    # 所以这里处理的还是time layers得数据 所以处理序列
+    # 单独的生成交给generate.
+    def forward(self, xs, h):
+        self.lstm_layer.set_state(h)
 
-            out = self.embed_layer.forward(xs)
+        out = self.embed_layer.forward(xs)
+        out = self.lstm_layer.forward(out)
+        score = self.affine_layer.forward(out)
+
+        return score
+
+    def backward(self, dscore):
+        dout = self.affine_layer.backward(dscore)
+        dout = self.lstm_layer.backward(dout)
+        dout = self.embed_layer.backward(dout)
+
+        dh = self.lstm_layer.dh
+        return dh
+
+    def generate(self, h, start_id, sample_size):
+        """
+        xs = [
+            [10, 25, 3, 88, 7],      # 样本 0 的 5 个时间步
+            [42, 5, 19, 60, 33],     # 样本 1 的 5 个时间步
+        ]
+
+        xs.shape = (2, 5)
+                    ↑  ↑
+                    N  T
+        x=[3] 
+        
+        x = [
+            [3]
+        ]
+        一个序列，序列长度为1.里面的token id是3
+        """
+        self.lstm_layer.set_state(h)
+        sampled = []
+        sample_id = start_id
+        for _ in range(sample_size):
+            x = np.array(sample_id).reshape((1, 1))
+            out = self.embed_layer.forward(x)
             out = self.lstm_layer.forward(out)
             score = self.affine_layer.forward(out)
 
-            return score
+            # 这里自回归
+            sample_id = np.argmax(score.flatten())
+            sampled.append(int(sample_id))
 
-        def backward(self, dscore):
-            dout = self.affine_layer.backward(dscore)
-            dout = self.lstm_layer.backward(dout)
-            dout = self.embed_layer.backward(dout)
-
-            dh = self.lstm_layer.dh
-            return dh
-
-        def generate(self, h, start_id, sample_size):
-            sampled = []
-            sample_id = start_id
-
-            self.lstm_layer.set_state(h)
-
-            for _ in range(sample_size):
-                x = np.array(sample_id).reshape((1, 1))
+        return sampled
