@@ -136,3 +136,55 @@ class Decoder(BaseModel):
             sampled.append(int(sample_id))
 
         return sampled
+
+class Seq2seq(BaseModel):
+    def __init__(self, vocab_size, wordvec_size, hidden_size):
+        V, D, H = vocab_size, wordvec_size, hidden_size
+        self.encoder = Encoder(V, D, H)
+        self.decoder = Decoder(V, D, H)
+
+        # decoder里面本来应该包含这一部分
+        # 但是 decoder实现了forward跟backward共有的部分
+        # 所以 这一块放到seq2seq来实现
+        self.softmax = TimeSoftmaxWithLoss()
+
+        self.params = self.encoder.params + self.decoder.params
+        self.grads = self.encoder.grads + self.decoder.grads
+
+    def forward(self,xs, ts):
+        # encoder的forward则是全程xs参与
+        h = self.encoder.forward(xs)
+
+        # decoder的forward则比较特殊
+        # teacher forcing
+        decoder_xs, decoder_ts = ts[:, :-1], ts[:, 1:]
+
+        # score一般是用原始输入xs
+        # 但是这里teacher forcing 原始输入换成了label数据来喂
+        score = self.decoder.forward(decoder_xs, h)
+
+        # loss这里计算expected and actual
+        # actual用ts没问题
+        # expected一般用xs计算 但这里也用ts的数据喂进去
+        loss = self.softmax.forward(score, decoder_ts)
+        return loss
+
+    def backward(self, dout=1):
+        # 还是分两部分 分别看encoder和decoder的backward过程
+        dout = self.softmax.backward(dout)
+        dh = self.decoder.backward(dout)
+        dout = self.encoder.backward(dh)
+        return dout
+
+    # 这个输入也有说法
+    # xs其实是context 也就是上下文
+    # 在上下文里面序列生成
+    # 比如机器翻译 那个翻译的输入 就是xs
+    # P(wn|w1,w2,...wn-1 and h)
+    # xs最终映射到h
+    # start_id就是eos
+    # sample size是序列长度
+    def generate(self, xs, start_id, sample_size):
+        h = self.encoder.forward(xs)
+        sampled = self.decoder.generate(h, start_id, sample_size)
+        return sampled
