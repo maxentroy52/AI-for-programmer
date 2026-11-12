@@ -1,5 +1,8 @@
 # coding: utf-8
 import sys
+
+from ch7.peeky_seq2seq import PeekySeq2seq
+
 sys.path.append("..")
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +12,7 @@ import matplotlib.pyplot as plt
 from dataset import sequence
 
 from seq2seq import Seq2seq
+from peeky_seq2seq import PeekySeq2seq
 from common.optimizers import Adam
 from common.trainer import Trainer
 from common.util import eval_seq2seq
@@ -34,7 +38,8 @@ if is_reverse:
 vocab_size = len(char_to_id)
 
 # 3.生成模型
-model = Seq2seq(vocab_size, wordvec_size, hidden_size, )
+#model = Seq2seq(vocab_size, wordvec_size, hidden_size)
+model = PeekySeq2seq(vocab_size, wordvec_size, hidden_size)
 optimizer = Adam()
 trainer = Trainer(model, optimizer)
 
