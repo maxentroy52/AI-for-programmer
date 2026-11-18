@@ -63,7 +63,7 @@ class AttentionDecoder():
         # 整理参数
         layers = [self.embed_layer, self.lstm_layer, self.attention_layer, self.affine_layer]
         self.params, self.grads = [], []
-        for layer in (self.embed_layer, self.lstm_layer, self.affine_layer):
+        for layer in layers:
             self.params += layer.params
             self.grads += layer.grads
 
@@ -133,7 +133,7 @@ class AttentionSeq2seq(Seq2seq):
     def __init__(self, vocab_size, wordvec_size, hidden_size):
         self.encoder = AttentionEncoder(vocab_size, wordvec_size, hidden_size)
         self.decoder = AttentionDecoder(vocab_size, wordvec_size, hidden_size)
-        self.softmax = TimeSoftmaxWithLoss
+        self.softmax = TimeSoftmaxWithLoss()
 
         self.params = self.encoder.params + self.decoder.params
         self.grads = self.encoder.grads + self.decoder.grads
