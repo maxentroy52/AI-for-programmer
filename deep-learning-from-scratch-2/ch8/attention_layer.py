@@ -181,7 +181,7 @@ class TimeAttention():
     # predict解决预测的问题
     def forward(self, hs_enc, hs_dec):
         N, T, H = hs_dec.shape
-        out = np.empty_like(hs_enc)
+        out = np.empty_like(hs_dec)
 
         self.layers = []
         self.attention_weights = []

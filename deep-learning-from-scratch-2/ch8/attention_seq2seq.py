@@ -1,8 +1,5 @@
 # coding: utf-8
 import sys
-
-from ch8.attention_layer import TimeAttention
-
 sys.path.append('..')
 import numpy as np
 
