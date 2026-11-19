@@ -41,7 +41,7 @@ for epoch in range(max_epoch):
     # 训练完成 更新一轮参数 评估结果
     correct_num = 0
     for i in range(len(x_test)):
-        question, answer = x_test[i], t_test[i]
+        question, answer = x_test[[i]], t_test[[i]]
         verbose = i < 10
         correct_num += eval_seq2seq(model, question, answer, id_to_char, verbose, is_reverse=True)
 
